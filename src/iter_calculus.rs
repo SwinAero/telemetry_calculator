@@ -1,5 +1,23 @@
-use std::ops::{AddAssign, Sub};
+use std::ops::{AddAssign, SubAssign};
 use std::mem;
+
+#[macro_export]
+macro_rules! differentiate {
+	($($iter:expr),+) => {
+		($(
+			Differentiate::from($iter)
+		),+)
+	};
+}
+
+#[macro_export]
+macro_rules! integrate {
+	($($iter:expr),+) => {
+		($(
+			Integrate::from($iter)
+		),+)
+	};
+}
 
 pub struct Differentiate<I, T> {
 	last: Option<T>,
@@ -16,9 +34,8 @@ impl<I: Iterator, T> From<I> for Differentiate<I, T> {
 }
 
 impl<I: Iterator<Item=T>, T> Iterator for Differentiate<I, T>
-	where T: Sub + Copy,
-		  <T as Sub>::Output: Default {
-	type Item = <T as Sub>::Output;
+	where T: SubAssign + Copy + Default {
+	type Item = T;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let mut cur = if let Some(i) = self.inner.next() {
@@ -30,11 +47,13 @@ impl<I: Iterator<Item=T>, T> Iterator for Differentiate<I, T>
 		if let Some(ref mut last) = self.last {
 			mem::swap(last, &mut cur);
 
-			Some(*last - cur)
+			*last -= cur;
+
+			Some(*last)
 		} else {
 			self.last = Some(cur);
 
-			Some(<T as Sub>::Output::default())
+			Some(T::default())
 		}
 	}
 }

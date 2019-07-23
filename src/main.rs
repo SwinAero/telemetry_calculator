@@ -11,7 +11,10 @@ use std::error::Error;
 use std::fmt;
 use std::io::{BufRead, BufReader};
 
+#[macro_use]
 mod iter_calculus;
+
+use iter_calculus::*;
 
 #[cfg(feature = "simd")]
 mod simd;
@@ -116,30 +119,56 @@ impl Iterator for BufCSV {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-	let bufcsv = BufCSV::new("testdata/still.csv")?;
+	let bufcsv = BufCSV::new("testdata/rotate.csv")?;
 
 	let baseline = bufcsv.previous;
 
-	let ((t, ax), (ay, az)): ((Vec<_>, Vec<_>), (Vec<_>, Vec<_>)) = {
-		let into_radians = std::f32::consts::PI / 180.;
+	let (dt, dx, dy, dz): (_, Integrate<Integrate<Integrate<_, f32>, f32>, f32>, Integrate<Integrate<Integrate<_, f32>, f32>, f32>, Integrate<Integrate<Integrate<_, f32>, f32>, f32>) = {
+		let ((dt, ax), (ay, az)): ((Vec<_>, Vec<_>), (Vec<_>, Vec<_>)) = {
+			let into_radians = std::f32::consts::PI / 180.;
 
-		let (a, b): (Vec<_>, Vec<_>) = bufcsv.into_iter()
-			.skip(1000)
-			.take(1000)
-			.map(|mut tdb| {
-				tdb.theta_x *= into_radians;
-				tdb.theta_y *= into_radians;
-				tdb.theta_z *= into_radians;
+			let (a, b): (Vec<_>, Vec<_>) = bufcsv.into_iter()
+				.map(|mut tdb| {
+					tdb.theta_x *= into_radians;
+					tdb.theta_y *= into_radians;
+					tdb.theta_z *= into_radians;
 
-				let point = Point3::new(tdb.acc_x, tdb.acc_y, tdb.acc_z);
-				let rot = Rotation3::from_euler_angles(tdb.theta_x, tdb.theta_y, tdb.theta_z);
-				let norm_accel: Point3<f32> = rot.transform_point(&point);
+					let point = Point3::new(tdb.acc_x, tdb.acc_y, tdb.acc_z);
+					let rot = Rotation3::from_euler_angles(tdb.theta_x, tdb.theta_y, tdb.theta_z);
+					let norm_accel: Point3<f32> = rot.transform_point(&point);
 
-				((tdb.delta_t, norm_accel[0]), (norm_accel[1], norm_accel[2]))
-			}).unzip();
+					((tdb.delta_t, norm_accel[0]), (norm_accel[1], norm_accel[2]))
+				}).unzip();
 
-		(a.into_iter().unzip(), b.into_iter().unzip())
+			(a.into_iter().unzip(), b.into_iter().unzip())
+		};
+
+		let (jx, jy, jz) = differentiate!(ax.into_iter(), ay.into_iter(), az.into_iter());
+		let (ax, ay, az): (Integrate<_, f32>, Integrate<_, f32>, Integrate<_, f32>) = integrate!(jx, jy, jz);
+		let (vx, vy, vz): (Integrate<Integrate<_, f32>, f32>, Integrate<Integrate<_, f32>, f32>, Integrate<Integrate<_, f32>, f32>) = integrate!(ax, ay, az);
+		let (dx, dy, dz): (Integrate<Integrate<_, f32>, f32>, Integrate<Integrate<_, f32>, f32>, Integrate<Integrate<_, f32>, f32>) = integrate!(vx, vy, vz);
+
+		(dt, dx, dy, dz)
 	};
+
+	let fd = dt.into_iter()
+		.zip(dx)
+		.zip(dy
+			.zip(dz)
+		)
+		.map(|((t, x), (y, z))| {
+			(t, x, y, z)
+		})
+		.fold((0f32, 0f32, 0f32, 0f32), |mut accum, this| {
+			accum.0 += this.0;
+			accum.1 += this.0 * this.1;
+			accum.2 += this.0 * this.2;
+			accum.3 += this.0 * this.3;
+
+			accum
+		});
+
+	println!("{}, {},{},{}", fd.0, fd.1, fd.2, fd.3);
 
 	Ok(())
 }
