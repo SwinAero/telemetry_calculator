@@ -1,5 +1,6 @@
 use std::ops::{AddAssign, SubAssign};
 use std::mem;
+use std::fmt::Debug;
 
 #[macro_export]
 macro_rules! differentiate {
@@ -34,7 +35,7 @@ impl<I: Iterator, T> From<I> for Differentiate<I, T> {
 }
 
 impl<I: Iterator<Item=T>, T> Iterator for Differentiate<I, T>
-	where T: SubAssign + Copy + Default {
+	where T: SubAssign + Copy + Debug + Default {
 	type Item = T;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -45,11 +46,13 @@ impl<I: Iterator<Item=T>, T> Iterator for Differentiate<I, T>
 		};
 
 		if let Some(ref mut last) = self.last {
-			mem::swap(last, &mut cur);
+			let mut last = mem::replace(last,  cur);
 
-			*last -= cur;
+			println!("{:?} - {:?}", last, cur);
 
-			Some(*last)
+			last -= cur;
+
+			Some(last)
 		} else {
 			self.last = Some(cur);
 
@@ -73,11 +76,12 @@ impl<I: Iterator, T: Default> From<I> for Integrate<I, T> {
 }
 
 impl<I: Iterator<Item=T>, T> Iterator for Integrate<I, T>
-	where T: AddAssign + Copy {
+	where T: AddAssign + Copy + Debug {
 	type Item = T;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		if let Some(i) = self.inner.next() {
+			println!("{:?} + {:?}", self.accumulator, i);
 			self.accumulator += i;
 			return Some(self.accumulator);
 		} else {
