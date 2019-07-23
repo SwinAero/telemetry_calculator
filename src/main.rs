@@ -13,7 +13,6 @@ use crate::simd::Telemetryx16Iter;
 use packed_simd::f32x16;
 
 mod simd;
-mod trig;
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct TelemetryDataUnit {

@@ -1,5 +1,3 @@
-#[allow(unused)]
-pub mod iter;
 pub mod conv;
 
 use packed_simd::{u32x16, f32x16};
