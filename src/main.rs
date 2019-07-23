@@ -119,7 +119,7 @@ impl Iterator for BufCSV {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-	let bufcsv = BufCSV::new("testdata/rotate.csv")?;
+	let bufcsv = BufCSV::new("testdata/still.csv")?;
 
 	let baseline = bufcsv.previous;
 
@@ -167,8 +167,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 			accum
 		});
-
-	println!("{}, {},{},{}", fd.0, fd.1, fd.2, fd.3);
 
 	Ok(())
 }

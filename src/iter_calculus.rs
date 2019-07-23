@@ -48,8 +48,6 @@ impl<I: Iterator<Item=T>, T> Iterator for Differentiate<I, T>
 		if let Some(ref mut last) = self.last {
 			let mut last = mem::replace(last,  cur);
 
-			println!("{:?} - {:?}", last, cur);
-
 			last -= cur;
 
 			Some(last)
@@ -81,7 +79,6 @@ impl<I: Iterator<Item=T>, T> Iterator for Integrate<I, T>
 
 	fn next(&mut self) -> Option<Self::Item> {
 		if let Some(i) = self.inner.next() {
-			println!("{:?} + {:?}", self.accumulator, i);
 			self.accumulator += i;
 			return Some(self.accumulator);
 		} else {
