@@ -4,7 +4,7 @@ pub mod conv;
 
 use packed_simd::{u32x16, f32x16};
 use conv::*;
-use crate::TelemetryDataUnit;
+use crate::RawTelemUnit;
 use std::vec::IntoIter;
 
 #[cfg(test)]
@@ -56,7 +56,7 @@ macro_rules! poly_iter {
 	}
 }
 
-impl<I> From<I> for Telemetryx16Iter where I: Iterator<Item=TelemetryDataUnit> {
+impl<I> From<I> for Telemetryx16Iter where I: Iterator<Item=RawTelemUnit> {
 	fn from(units: I) -> Self {
 		poly_let_mut!(vec![], delta_t, acc_x, acc_y, acc_z, theta_x, theta_y, theta_z);
 
