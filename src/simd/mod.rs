@@ -1,3 +1,5 @@
+extern crate packed_simd; // This program's speed can be improved by an order of magnitude if optimised using Single Instruction Multiple Data instructions
+
 pub mod conv;
 
 use packed_simd::{u32x16, f32x16};
@@ -5,6 +7,8 @@ use conv::*;
 use crate::TelemetryDataUnit;
 use std::vec::IntoIter;
 
+#[cfg(test)]
+mod tests;
 
 #[derive(Debug)]
 pub struct Telemetryx16Iter {

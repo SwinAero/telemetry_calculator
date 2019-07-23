@@ -1,17 +1,14 @@
 #![feature(test)]
 extern crate test;
 
-extern crate packed_simd; // This program's speed can be improved by an order of magnitude if optimised using Single Instruction Multiple Data instructions
-
 use std::{io, fs};
 
 use std::str::FromStr;
 use std::error::Error;
 use std::fmt;
 use std::io::{BufRead, BufReader};
-use crate::simd::Telemetryx16Iter;
-use packed_simd::f32x16;
 
+#[cfg(feature = "simd")]
 mod simd;
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -113,61 +110,14 @@ impl Iterator for BufCSV {
 	}
 }
 
-
-#[bench]
-fn simd_instructions(b: &mut test::Bencher) -> Result<(), Box<dyn Error>> {
-	let bufcsv = BufCSV::new("testdata/drop.csv")?;
-	let blocks = Telemetryx16Iter::from(bufcsv.into_iter()).collect::<Vec<_>>();
-
-	let into_radians = f32x16::splat(std::f32::consts::PI / 180.);
-
-	b.iter(|| {
-		let _ = test::black_box(
-			blocks.clone().into_iter()
-				.map(|mut block| {
-					block.theta_x *= into_radians;
-					block.theta_y *= into_radians;
-					block.theta_z *= into_radians;
-
-					block
-				})
-		);
-	});
-
-	Ok(())
-}
-
-#[bench]
-fn standard_optimization(b: &mut test::Bencher) -> Result<(), Box<dyn Error>> {
-	let bufcsv = BufCSV::new("testdata/drop.csv")?;
-	let units = bufcsv.into_iter().collect::<Vec<_>>();
-
-	let into_radians = std::f32::consts::PI / 180.;
-
-	b.iter(|| {
-		let _ = test::black_box(
-			units.clone().into_iter()
-				.map(|mut unit| {
-					unit.theta_x *= into_radians;
-					unit.theta_y *= into_radians;
-					unit.theta_z *= into_radians;
-
-					unit
-				})
-		);
-	});
-
-	Ok(())
-}
-
 fn main() -> Result<(), Box<dyn Error>> {
 	let bufcsv = BufCSV::new("testdata/still.csv")?;
 
 	let baseline = bufcsv.previous;
 
-	let into_radians = f32x16::splat(std::f32::consts::PI / 180.);
+	let into_radians = std::f32::consts::PI / 180.;
 
-	let _ = Telemetryx16Iter::from(bufcsv.into_iter())
+	let _ = bufcsv.into_iter()
 		.map(|mut tdb| {
 			tdb.theta_x *= into_radians;
 			tdb.theta_y *= into_radians;
