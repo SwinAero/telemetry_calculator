@@ -37,12 +37,12 @@ impl FromStr for TelemetryDataUnit {
 
 		Ok(TelemetryDataUnit {
 			delta_t: values[0].parse::<u32>()?,
-			acc_x: values[0].parse::<f32>()?,
-			acc_y: values[0].parse::<f32>()?,
-			acc_z: values[0].parse::<f32>()?,
-			theta_x: values[0].parse::<f32>()?,
-			theta_y: values[0].parse::<f32>()?,
-			theta_z: values[0].parse::<f32>()?,
+			acc_x: values[1].parse::<f32>()?,
+			acc_y: values[2].parse::<f32>()?,
+			acc_z: values[3].parse::<f32>()?,
+			theta_x: values[4].parse::<f32>()?,
+			theta_y: values[5].parse::<f32>()?,
+			theta_z: values[6].parse::<f32>()?,
 		})
 	}
 }
@@ -113,12 +113,14 @@ impl Iterator for BufCSV {
 	}
 }
 
+
 #[bench]
 fn simd_instructions(b: &mut test::Bencher) -> Result<(), Box<dyn Error>> {
-	let bufcsv = BufCSV::new("TELEM_0.CSV")?;
+	let bufcsv = BufCSV::new("testdata/drop.csv")?;
 	let blocks = Telemetryx16Iter::from(bufcsv.into_iter()).collect::<Vec<_>>();
 
 	let into_radians = f32x16::splat(std::f32::consts::PI / 180.);
+
 	b.iter(|| {
 		let _ = test::black_box(
 			blocks.clone().into_iter()
@@ -137,10 +139,11 @@ fn simd_instructions(b: &mut test::Bencher) -> Result<(), Box<dyn Error>> {
 
 #[bench]
 fn standard_optimization(b: &mut test::Bencher) -> Result<(), Box<dyn Error>> {
-	let bufcsv = BufCSV::new("TELEM_0.CSV")?;
+	let bufcsv = BufCSV::new("testdata/drop.csv")?;
 	let units = bufcsv.into_iter().collect::<Vec<_>>();
 
 	let into_radians = std::f32::consts::PI / 180.;
+
 	b.iter(|| {
 		let _ = test::black_box(
 			units.clone().into_iter()
@@ -158,11 +161,12 @@ fn standard_optimization(b: &mut test::Bencher) -> Result<(), Box<dyn Error>> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-	let bufcsv = BufCSV::new("TELEM_0.CSV")?;
+	let bufcsv = BufCSV::new("testdata/still.csv")?;
 
 	let baseline = bufcsv.previous;
 
 	let into_radians = f32x16::splat(std::f32::consts::PI / 180.);
+
 	let _ = Telemetryx16Iter::from(bufcsv.into_iter())
 		.map(|mut tdb| {
 			tdb.theta_x *= into_radians;
