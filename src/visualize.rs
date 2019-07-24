@@ -2,6 +2,7 @@ use piston_window::*;
 use crate::smoothing::circbuf::CircBuf;
 use std::time::{SystemTime, Duration};
 use std::thread;
+// use graphics::glyph_cache::rusttype::GlyphCache;
 
 const SIZE: [f64; 2] = [1280., 720.];
 
@@ -42,15 +43,43 @@ pub fn run<I>(mut data: I)
 	let y_factor = 7. * SIZE[1] / 16e-1;
 	let y_offset = SIZE[1] / 2.;
 
+	// let gc = GlyphCache::new(Font::from_bytes(include_bytes!("../fonts/font.ttf")));
+
 	let mut timings = SystemTime::now();
 	while let Some(e) = window.next() {
 		window.draw_2d(&e, |ctx, g2d, _device| {
 			clear([1.0; 4], g2d);
 
+			line(
+				[0.0, 0.0, 0.0, 1.0], // black
+				3.0,
+				[x_offset, y_offset, SIZE[0] - x_offset, y_offset],
+				ctx.transform,
+				g2d,
+			);
+
+			for i in 0..=10 {
+				let x = x_offset + i as f64 * x_factor;
+				line(
+					[0.0, 0.0, 0.0, 0.2], // grey
+					1.0,
+					[x, SIZE[1] / 16., x, SIZE[1] * 15. / 16.],
+					ctx.transform,
+					g2d,
+				);
+
+				// text([0.0, 0.0, 0.0, 1.0],24,&format!("{}", i), gc, ctx.transform,g2d);
+			}
+
 			let mut time = 0.;
 			circ_buf.iter()
 				.for_each(|(dt, vx, vy, vz)| {
 					let (dt, vx, vy, vz) = (*dt as f64, *vx as f64, *vy as f64, *vz as f64);
+
+					if last_vel == (0., 0., 0., ) {
+						last_vel = (vx, vy, vz);
+						return;
+					}
 
 					let xpair = [time * x_factor + x_offset, (time + dt) * x_factor + x_offset];
 
@@ -83,10 +112,14 @@ pub fn run<I>(mut data: I)
 					time += dt;
 				});
 
+			last_vel = (0., 0., 0.);
+
 			if let Ok(elapsed) = timings.elapsed() {
+				timings = SystemTime::now();
+
 				let fps = 1e6 / elapsed.as_micros() as f32;
 
-				for _ in 0..(frequency / fps).ceil() as u8 {
+				for _ in 0..(frequency / fps).ceil() as usize {
 					if let Some(item) = data.next() {
 						circ_buf.push(item);
 					} else {
@@ -99,7 +132,6 @@ pub fn run<I>(mut data: I)
 
 				println!("Framerate: {:?}", fps);
 			}
-			timings = SystemTime::now();
 		});
 	}
 }

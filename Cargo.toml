@@ -13,8 +13,13 @@ nalgebra = "0.18"
 version = "0.100"
 optional = true
 
+[dependencies.piston2d-graphics]
+version = "*"
+features = ["glyph_cache_rusttype"]
+optional = true
+
 [features]
 smooth = []
-visualize = ["piston_window"]
+visualize = ["piston_window", "piston2d-graphics"]
 
 default = ["smooth", "visualize"]

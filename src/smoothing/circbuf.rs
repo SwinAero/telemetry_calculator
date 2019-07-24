@@ -31,10 +31,6 @@ impl<T> CircBuf<T> {
 	pub fn iter(&self) -> Iter<T> {
 		Iter { buf: &self.buf, offset: self.index, i: 0 }
 	}
-
-	pub fn iter_zeroed(&self) -> Iter<T> {
-		Iter { buf: &self.buf, offset: 0, i: 0 }
-	}
 }
 
 impl<T: Copy> CircBuf<T> {
@@ -44,10 +40,6 @@ impl<T: Copy> CircBuf<T> {
 			.filter(|x| x.is_some())
 			.map(|x| x.unwrap())
 			.fold(init, f)
-	}
-
-	pub fn get(&self, index: usize) -> Option<T> {
-		self.buf[(index + self.index) % self.buf.len()]
 	}
 }
 
