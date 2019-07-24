@@ -28,9 +28,9 @@ pub struct RawTelemUnit {
 	pub acc_x: f32,
 	pub acc_y: f32,
 	pub acc_z: f32,
-	pub theta_x: f32,
-	pub theta_y: f32,
-	pub theta_z: f32,
+	pub roll: f32,
+	pub pitch: f32,
+	pub yaw: f32,
 }
 
 impl FromStr for RawTelemUnit {
@@ -48,9 +48,9 @@ impl FromStr for RawTelemUnit {
 			acc_x: values[1].parse::<f32>()?,
 			acc_y: values[2].parse::<f32>()?,
 			acc_z: values[3].parse::<f32>()?,
-			theta_x: values[4].parse::<f32>()?,
-			theta_y: values[5].parse::<f32>()?,
-			theta_z: values[6].parse::<f32>()?,
+			roll: values[4].parse::<f32>()?,
+			pitch: values[5].parse::<f32>()?,
+			yaw: values[6].parse::<f32>()?,
 		})
 	}
 }
@@ -124,19 +124,17 @@ impl Iterator for BufCSV {
 fn main() -> Result<(), Box<dyn Error>> {
 	let bufcsv = BufCSV::new("testdata/drop.csv")?;
 
-	let baseline = bufcsv.previous;
-
 	let ((dt, ax), (ay, az)): ((Vec<_>, Vec<_>), (Vec<_>, Vec<_>)) = {
 		let into_radians = std::f32::consts::PI / 180.;
 
 		let (a, b): (Vec<_>, Vec<_>) = bufcsv.into_iter()
 			.map(|mut tdb| {
-				tdb.theta_x *= into_radians;
-				tdb.theta_y *= into_radians;
-				tdb.theta_z *= into_radians;
+				tdb.roll *= into_radians;
+				tdb.pitch *= into_radians;
+				tdb.yaw *= into_radians;
 
 				let point = Point3::new(tdb.acc_x, tdb.acc_y, tdb.acc_z);
-				let rot = Rotation3::from_euler_angles(tdb.theta_x, tdb.theta_y, tdb.theta_z);
+				let rot = Rotation3::from_euler_angles(tdb.roll, tdb.pitch, tdb.yaw);
 				let norm_accel: Point3<f32> = rot.transform_point(&point);
 
 				((tdb.delta_t, norm_accel[0]), (norm_accel[1], norm_accel[2]))

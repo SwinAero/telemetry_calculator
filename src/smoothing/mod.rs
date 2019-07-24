@@ -1,5 +1,5 @@
 use crate::smoothing::circbuf::CircBuf;
-use std::ops::{AddAssign, DivAssign, Mul, Add};
+use std::ops::{Mul, Add};
 
 pub mod circbuf;
 

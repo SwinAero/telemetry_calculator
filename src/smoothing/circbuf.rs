@@ -1,5 +1,5 @@
 use std::mem;
-use std::ops::{AddAssign, DivAssign, Add};
+use std::ops::Add;
 
 pub struct CircBuf<T> {
 	buf: Vec<Option<T>>,
