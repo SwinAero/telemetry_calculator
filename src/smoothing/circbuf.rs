@@ -22,7 +22,18 @@ impl<T> CircBuf<T> {
 
 		let old = mem::replace(&mut self.buf[self.index], Some(t));
 
+		self.index += 1;
+		self.index %= self.buf.len();
+
 		return old;
+	}
+
+	pub fn iter(&self) -> Iter<T> {
+		Iter { buf: &self.buf, offset: self.index, i: 0 }
+	}
+
+	pub fn iter_zeroed(&self) -> Iter<T> {
+		Iter { buf: &self.buf, offset: 0, i: 0 }
 	}
 }
 
@@ -33,5 +44,37 @@ impl<T: Copy> CircBuf<T> {
 			.filter(|x| x.is_some())
 			.map(|x| x.unwrap())
 			.fold(init, f)
+	}
+
+	pub fn get(&self, index: usize) -> Option<T> {
+		self.buf[(index + self.index) % self.buf.len()]
+	}
+}
+
+pub struct Iter<'a, T> {
+	buf: &'a Vec<Option<T>>,
+	offset: usize,
+	i: usize,
+}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+	type Item = &'a T;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		let len = self.buf.len();
+
+		if self.i == len {
+			return None;
+		}
+
+		let item = &self.buf[(self.i + self.offset) % len];
+
+		self.i += 1;
+
+		if let Some(ref inner) = item {
+			return Some(inner);
+		} else {
+			return None;
+		}
 	}
 }

@@ -3,7 +3,6 @@ extern crate nalgebra;
 extern crate piston_window;
 
 use nalgebra::*;
-use piston_window::*;
 
 use std::{io, fs};
 use std::str::FromStr;
@@ -26,6 +25,9 @@ mod smoothing;
 
 #[cfg(feature = "smooth")]
 use smoothing::*;
+
+#[cfg(feature = "visualize")]
+mod visualize;
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct RawTelemUnit {
@@ -154,26 +156,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 		let (jx, jy, jz) = calculus!(dt, WeightedMovingAvgF32, jx, jy, jz);
 	let (ax, ay, az) = calculus!(dt, IntegrateF32, jx, jy, jz);
 	let (vx, vy, vz) = calculus!(dt, IntegrateF32, ax, ay, az);
-	let (dx, dy, dz) = calculus!(dt, IntegrateF32, vx, vy, vz);
 
-	let fd = dt
-		.zip(dx)
-		.zip(dy
-			.zip(dz)
+	let data_src = dt
+		.zip(vx)
+		.zip(vy
+			.zip(vz)
 		)
+		.skip(10)
 		.map(|((t, x), (y, z))| {
 			(t, x, y, z)
-		})
-		.fold((0f32, 0f32, 0f32, 0f32), |mut accum, this| {
-			accum.0 += this.0;
-			accum.1 += this.0 * this.1;
-			accum.2 += this.0 * this.2;
-			accum.3 += this.0 * this.3;
-
-			accum
 		});
 
-	println!("{:?}", fd);
+	#[cfg(feature = "visualize")]
+		visualize::run(data_src);
 
 	Ok(())
 }
