@@ -2,8 +2,11 @@
 extern crate test;
 
 extern crate nalgebra;
+#[cfg(feature = "visualize")]
+extern crate piston_window;
 
 use nalgebra::*;
+use piston_window::*;
 
 use std::{io, fs};
 use std::str::FromStr;

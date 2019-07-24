@@ -14,8 +14,13 @@ nalgebra = "0.18"
 version = "0.3"
 optional = true
 
+[dependencies.piston_window]
+version = "0.98"
+optional = true
+
 [features]
 simd = ["packed_simd"]
 smooth = []
+visualize = ["piston_window"]
 
-default = ["smooth"]
+default = ["smooth", "visualize"]
