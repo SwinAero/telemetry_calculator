@@ -16,6 +16,11 @@ mod calculus;
 
 use calculus::*;
 
+#[macro_use]
+mod noconsume;
+
+use noconsume::*;
+
 #[cfg(feature = "smooth")]
 mod smoothing;
 
@@ -127,18 +132,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 	let ((dt, ax), (ay, az)): ((Vec<_>, Vec<_>), (Vec<_>, Vec<_>)) = {
 		let into_radians = std::f32::consts::PI / 180.;
 
-		let (a, b): (Vec<_>, Vec<_>) = bufcsv.into_iter()
-			.map(|mut tdb| {
-				tdb.roll *= into_radians;
-				tdb.pitch *= into_radians;
-				tdb.yaw *= into_radians;
+		let (a, b): (Vec<_>, Vec<_>) = bufcsv.map(|mut tdb| {
+			tdb.roll *= into_radians;
+			tdb.pitch *= into_radians;
+			tdb.yaw *= into_radians;
 
-				let point = Point3::new(tdb.acc_x, tdb.acc_y, tdb.acc_z);
-				let rot = Rotation3::from_euler_angles(tdb.roll, tdb.pitch, tdb.yaw);
-				let norm_accel: Point3<f32> = rot.transform_point(&point);
+			let point = Point3::new(tdb.acc_x, tdb.acc_y, tdb.acc_z);
+			let rot = Rotation3::from_euler_angles(tdb.roll, tdb.pitch, tdb.yaw);
+			let norm_accel: Point3<f32> = rot.transform_point(&point);
 
-				((tdb.delta_t, norm_accel[0]), (norm_accel[1], norm_accel[2]))
-			}).unzip();
+			((tdb.delta_t, norm_accel[0]), (norm_accel[1], norm_accel[2]))
+		}).unzip();
 
 		(a.into_iter().unzip(), b.into_iter().unzip())
 	};

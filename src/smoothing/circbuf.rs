@@ -1,12 +1,11 @@
 use std::mem;
-use std::ops::Add;
 
 pub struct CircBuf<T> {
 	buf: Vec<Option<T>>,
 	index: usize,
 }
 
-impl<T: Default> CircBuf<T> {
+impl<T> CircBuf<T> {
 	pub fn new(size: usize) -> Self {
 		CircBuf {
 			buf: Vec::with_capacity(size),
@@ -27,13 +26,12 @@ impl<T: Default> CircBuf<T> {
 	}
 }
 
-impl<T> CircBuf<T> where
-	T: Add + Default + Copy,
-	<T as Add>::Output: Into<T> {
-	pub fn sum(&self) -> T {
+impl<T: Copy> CircBuf<T> {
+	pub fn fold<F, A>(&self, init: A, f: F) -> A
+		where F: FnMut(A, T) -> A {
 		self.buf.iter()
 			.filter(|x| x.is_some())
 			.map(|x| x.unwrap())
-			.fold(T::default(), |acc, item| (acc + item).into())
+			.fold(init, f)
 	}
 }
