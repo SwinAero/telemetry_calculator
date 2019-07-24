@@ -3,30 +3,23 @@ use std::mem;
 use std::fmt::Debug;
 
 #[macro_export]
-macro_rules! differentiate {
-	($($iter:expr),+) => {
+macro_rules! calculus {
+	($variant:ident, $($iter:expr),+) => {
 		($(
-			Differentiate::from($iter)
+			$variant::from($iter)
 		),+)
 	};
 }
 
-#[macro_export]
-macro_rules! integrate {
-	($($iter:expr),+) => {
-		($(
-			Integrate::from($iter)
-		),+)
-	};
-}
+pub type DifferentiateF32<I> = Differentiate<I, f32>;
 
 pub struct Differentiate<I, T> {
 	last: Option<T>,
 	inner: I,
 }
 
-impl<I: Iterator, T> From<I> for Differentiate<I, T> {
-	fn from(inner: I) -> Self {
+impl<I: Iterator, T> Differentiate<I, T> {
+	pub fn from(inner: I) -> Self {
 		Differentiate {
 			last: None,
 			inner,
@@ -39,14 +32,14 @@ impl<I: Iterator<Item=T>, T> Iterator for Differentiate<I, T>
 	type Item = T;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		let mut cur = if let Some(i) = self.inner.next() {
+		let cur = if let Some(i) = self.inner.next() {
 			i
 		} else {
 			return None;
 		};
 
 		if let Some(ref mut last) = self.last {
-			let mut last = mem::replace(last,  cur);
+			let mut last = mem::replace(last, cur);
 
 			last -= cur;
 
@@ -59,13 +52,15 @@ impl<I: Iterator<Item=T>, T> Iterator for Differentiate<I, T>
 	}
 }
 
+pub type IntegrateF32<I> = Integrate<I, f32>;
+
 pub struct Integrate<I, T> {
 	accumulator: T,
 	inner: I,
 }
 
-impl<I: Iterator, T: Default> From<I> for Integrate<I, T> {
-	fn from(inner: I) -> Self {
+impl<I: Iterator, T: Default> Integrate<I, T> {
+	pub fn from(inner: I) -> Self {
 		Integrate {
 			accumulator: <T as Default>::default(),
 			inner,

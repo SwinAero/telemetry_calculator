@@ -123,7 +123,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 	let baseline = bufcsv.previous;
 
-	let (dt, dx, dy, dz): (_, Integrate<Integrate<Integrate<_, f32>, f32>, f32>, Integrate<Integrate<Integrate<_, f32>, f32>, f32>, Integrate<Integrate<Integrate<_, f32>, f32>, f32>) = {
+	let (dt, dx, dy, dz) = {
 		let ((dt, ax), (ay, az)): ((Vec<_>, Vec<_>), (Vec<_>, Vec<_>)) = {
 			let into_radians = std::f32::consts::PI / 180.;
 
@@ -143,10 +143,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 			(a.into_iter().unzip(), b.into_iter().unzip())
 		};
 
-		let (jx, jy, jz) = differentiate!(ax.into_iter(), ay.into_iter(), az.into_iter());
-		let (ax, ay, az): (Integrate<_, f32>, Integrate<_, f32>, Integrate<_, f32>) = integrate!(jx, jy, jz);
-		let (vx, vy, vz): (Integrate<Integrate<_, f32>, f32>, Integrate<Integrate<_, f32>, f32>, Integrate<Integrate<_, f32>, f32>) = integrate!(ax, ay, az);
-		let (dx, dy, dz): (Integrate<Integrate<_, f32>, f32>, Integrate<Integrate<_, f32>, f32>, Integrate<Integrate<_, f32>, f32>) = integrate!(vx, vy, vz);
+		let (jx, jy, jz) = calculus!(DifferentiateF32, ax.into_iter(), ay.into_iter(), az.into_iter());
+		let (ax, ay, az) = calculus!(IntegrateF32, jx, jy, jz);
+		let (vx, vy, vz) = calculus!(IntegrateF32, ax, ay, az);
+		let (dx, dy, dz) = calculus!(IntegrateF32, vx, vy, vz);
 
 		(dt, dx, dy, dz)
 	};
