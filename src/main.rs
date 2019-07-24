@@ -12,12 +12,17 @@ use std::fmt;
 use std::io::{BufRead, BufReader};
 
 #[macro_use]
-mod iter_calculus;
+mod calculus;
 
-use iter_calculus::*;
+use calculus::*;
 
 #[cfg(feature = "simd")]
 mod simd;
+#[cfg(feature = "smooth")]
+mod smoothing;
+
+#[cfg(feature = "smooth")]
+use smoothing::*;
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct RawTelemUnit {
@@ -119,39 +124,37 @@ impl Iterator for BufCSV {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-	let bufcsv = BufCSV::new("testdata/still.csv")?;
+	let bufcsv = BufCSV::new("testdata/drop.csv")?;
 
 	let baseline = bufcsv.previous;
 
-	let (dt, dx, dy, dz) = {
-		let ((dt, ax), (ay, az)): ((Vec<_>, Vec<_>), (Vec<_>, Vec<_>)) = {
-			let into_radians = std::f32::consts::PI / 180.;
+	let ((dt, ax), (ay, az)): ((Vec<_>, Vec<_>), (Vec<_>, Vec<_>)) = {
+		let into_radians = std::f32::consts::PI / 180.;
 
-			let (a, b): (Vec<_>, Vec<_>) = bufcsv.into_iter()
-				.map(|mut tdb| {
-					tdb.theta_x *= into_radians;
-					tdb.theta_y *= into_radians;
-					tdb.theta_z *= into_radians;
+		let (a, b): (Vec<_>, Vec<_>) = bufcsv.into_iter()
+			.map(|mut tdb| {
+				tdb.theta_x *= into_radians;
+				tdb.theta_y *= into_radians;
+				tdb.theta_z *= into_radians;
 
-					let point = Point3::new(tdb.acc_x, tdb.acc_y, tdb.acc_z);
-					let rot = Rotation3::from_euler_angles(tdb.theta_x, tdb.theta_y, tdb.theta_z);
-					let norm_accel: Point3<f32> = rot.transform_point(&point);
+				let point = Point3::new(tdb.acc_x, tdb.acc_y, tdb.acc_z);
+				let rot = Rotation3::from_euler_angles(tdb.theta_x, tdb.theta_y, tdb.theta_z);
+				let norm_accel: Point3<f32> = rot.transform_point(&point);
 
-					((tdb.delta_t, norm_accel[0]), (norm_accel[1], norm_accel[2]))
-				}).unzip();
+				((tdb.delta_t, norm_accel[0]), (norm_accel[1], norm_accel[2]))
+			}).unzip();
 
-			(a.into_iter().unzip(), b.into_iter().unzip())
-		};
-
-		let (jx, jy, jz) = calculus!(DifferentiateF32, ax.into_iter(), ay.into_iter(), az.into_iter());
-		let (ax, ay, az) = calculus!(IntegrateF32, jx, jy, jz);
-		let (vx, vy, vz) = calculus!(IntegrateF32, ax, ay, az);
-		let (dx, dy, dz) = calculus!(IntegrateF32, vx, vy, vz);
-
-		(dt, dx, dy, dz)
+		(a.into_iter().unzip(), b.into_iter().unzip())
 	};
 
-	let fd = dt.into_iter()
+	let (jx, jy, jz) = calculus!(dt, DifferentiateF32, ax.into_iter(), ay.into_iter(), az.into_iter());
+	#[cfg(feature = "smooth")]
+		let (jx, jy, jz) = calculus!(dt, WeightedMovingAvgF32, jx, jy, jz);
+	let (ax, ay, az) = calculus!(dt, IntegrateF32, jx, jy, jz);
+	let (vx, vy, vz) = calculus!(dt, IntegrateF32, ax, ay, az);
+	let (dx, dy, dz) = calculus!(dt, IntegrateF32, vx, vy, vz);
+
+	let fd = dt.iter()
 		.zip(dx)
 		.zip(dy
 			.zip(dz)
@@ -167,6 +170,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 			accum
 		});
+
+	println!("{:?}", fd);
 
 	Ok(())
 }

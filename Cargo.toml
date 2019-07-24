@@ -16,3 +16,6 @@ optional = true
 
 [features]
 simd = ["packed_simd"]
+smooth = []
+
+default = ["smooth"]
