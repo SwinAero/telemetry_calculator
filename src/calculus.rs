@@ -4,9 +4,9 @@ use std::fmt::Debug;
 
 #[macro_export]
 macro_rules! calculus {
-	($intoiter:expr, $variant:ident, $($iter:expr),+) => {
+	($no_consume_iter:expr, $variant:ident, $($iter:expr),+) => {
 		($(
-			$variant::from($iter, $intoiter.clone().into_iter())
+			$variant::from($iter, $no_consume_iter.subscribe())
 		),+)
 	};
 }

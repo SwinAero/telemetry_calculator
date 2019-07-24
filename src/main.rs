@@ -127,12 +127,10 @@ impl Iterator for BufCSV {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-	let bufcsv = BufCSV::new("testdata/drop.csv")?;
+	let into_radians = std::f32::consts::PI / 180.;
 
-	let ((dt, ax), (ay, az)): ((Vec<_>, Vec<_>), (Vec<_>, Vec<_>)) = {
-		let into_radians = std::f32::consts::PI / 180.;
-
-		let (a, b): (Vec<_>, Vec<_>) = bufcsv.map(|mut tdb| {
+	let buf = BufCSV::new("testdata/drop.csv")?
+		.map(|mut tdb| {
 			tdb.roll *= into_radians;
 			tdb.pitch *= into_radians;
 			tdb.yaw *= into_radians;
@@ -141,20 +139,24 @@ fn main() -> Result<(), Box<dyn Error>> {
 			let rot = Rotation3::from_euler_angles(tdb.roll, tdb.pitch, tdb.yaw);
 			let norm_accel: Point3<f32> = rot.transform_point(&point);
 
-			((tdb.delta_t, norm_accel[0]), (norm_accel[1], norm_accel[2]))
-		}).unzip();
+			[tdb.delta_t, norm_accel[0], norm_accel[1], norm_accel[2]]
+		});
 
-		(a.into_iter().unzip(), b.into_iter().unzip())
-	};
+	let mut unziperator = Unziperator::new(buf);
 
-	let (jx, jy, jz) = calculus!(dt, DifferentiateF32, ax.into_iter(), ay.into_iter(), az.into_iter());
+	let ax = unziperator.subscribe();
+	let ay = unziperator.subscribe();
+	let az = unziperator.subscribe();
+	let mut dt = Teeterator::new(unziperator);
+
+	let (jx, jy, jz) = calculus!(dt, DifferentiateF32, ax, ay, az);
 	#[cfg(feature = "smooth")]
 		let (jx, jy, jz) = calculus!(dt, WeightedMovingAvgF32, jx, jy, jz);
 	let (ax, ay, az) = calculus!(dt, IntegrateF32, jx, jy, jz);
 	let (vx, vy, vz) = calculus!(dt, IntegrateF32, ax, ay, az);
 	let (dx, dy, dz) = calculus!(dt, IntegrateF32, vx, vy, vz);
 
-	let fd = dt.iter()
+	let fd = dt
 		.zip(dx)
 		.zip(dy
 			.zip(dz)
