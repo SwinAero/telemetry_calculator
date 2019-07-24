@@ -1,6 +1,3 @@
-#![feature(test)]
-extern crate test;
-
 extern crate nalgebra;
 #[cfg(feature = "visualize")]
 extern crate piston_window;
@@ -19,8 +16,6 @@ mod calculus;
 
 use calculus::*;
 
-#[cfg(feature = "simd")]
-mod simd;
 #[cfg(feature = "smooth")]
 mod smoothing;
 

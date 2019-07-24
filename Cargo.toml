@@ -9,17 +9,11 @@ edition = "2018"
 [dependencies]
 nalgebra = "0.18"
 
-# Not gonna happen, gonna use nalgebra and let nalgebra take care of the messy vector calculus
-[dependencies.packed_simd]
-version = "0.3"
-optional = true
-
 [dependencies.piston_window]
 version = "0.98"
 optional = true
 
 [features]
-simd = ["packed_simd"]
 smooth = []
 visualize = ["piston_window"]
 
