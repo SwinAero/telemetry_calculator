@@ -1,5 +1,5 @@
 use piston_window::*;
-use crate::smoothing::circbuf::CircBuf;
+use crate::circbuf::CircBuf;
 use std::time::{SystemTime, Duration};
 use std::thread;
 // use graphics::glyph_cache::rusttype::GlyphCache;

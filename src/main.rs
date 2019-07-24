@@ -15,6 +15,8 @@ mod calculus;
 
 use calculus::*;
 
+mod circbuf;
+
 #[macro_use]
 mod noconsume;
 
