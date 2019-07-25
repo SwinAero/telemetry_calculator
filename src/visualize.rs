@@ -26,7 +26,7 @@ pub fn run<I>(mut data: I)
 	println!("Sample rate: approx. {}/s", frequency);
 
 	let mut window: PistonWindow =
-		WindowSettings::new("Velocity Diagram", SIZE)
+		WindowSettings::new("Acceleration Demo", SIZE)
 			.exit_on_esc(true).build().unwrap();
 
 	let circ_buf_size = 10 * frequency as usize;
