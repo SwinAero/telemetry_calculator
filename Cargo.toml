@@ -8,11 +8,9 @@ edition = "2018"
 
 [dependencies]
 nalgebra = "0.18"
+serial = "0.4"
 
-[dependencies.serial]
-version = "0.4"
-optional = true
-
+# Yeah sorry, serial unix definitely doesn't work on Windows
 [dependencies.piston_window]
 version = "0.100"
 optional = true
@@ -25,6 +23,5 @@ optional = true
 [features]
 smooth = []
 visualize = ["piston_window", "piston2d-graphics"]
-from_serial = ["serial"]
 
-default = ["smooth", "visualize", "from_serial"]
+default = ["smooth", "visualize"]

@@ -1,6 +1,7 @@
 extern crate nalgebra;
 #[cfg(feature = "visualize")]
 extern crate piston_window;
+extern crate serial;
 
 use nalgebra::*;
 
@@ -8,7 +9,7 @@ use std::fs::{File, OpenOptions};
 use std::str::FromStr;
 use std::error::Error;
 use std::fmt;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Lines};
 
 #[macro_use]
 mod calculus;
@@ -21,6 +22,10 @@ mod circbuf;
 mod noconsume;
 
 use noconsume::*;
+
+mod serialbuf;
+
+use serialbuf::*;
 
 #[cfg(feature = "smooth")]
 mod smoothing;
@@ -76,27 +81,16 @@ impl fmt::Display for CSVDeErr {
 impl Error for CSVDeErr {}
 
 pub struct BufCSV<R> {
-	source: R,
-	previous: RawTelemUnit,
+	source: Lines<R>,
 	line_index: usize,
 }
 
 impl<R: BufRead> BufCSV<R> {
-	pub fn new(source: R) -> Result<Self, Box<dyn Error>> {
-		let mut bufcsv = BufCSV {
-			source,
-			previous: RawTelemUnit::default(),
+	pub fn new(source: R) -> Self {
+		BufCSV {
+			source: source.lines(),
 			line_index: 0,
-		};
-		// First data point is needed for baseline
-		bufcsv.previous = if let Some(mut rtu) = bufcsv.next() {
-			rtu.delta_t = 0.; // By definition the first data unit has no temporal baseline, and the unstable nature of this value from hardware shifts the integral, therefore this is zeroed to prevent any problem.
-			rtu
-		} else {
-			return Err(Box::new(CSVDeErr("Failed to find a baseline for data.".to_string())));
-		};
-
-		Ok(bufcsv)
+		}
 	}
 }
 
@@ -108,7 +102,7 @@ impl BufCSV<BufReader<File>> {
 
 		let br = BufReader::new(source);
 
-		Self::new(br)
+		Ok(Self::new(br))
 	}
 }
 
@@ -118,13 +112,7 @@ impl<T: BufRead> Iterator for BufCSV<T> {
 	fn next(&mut self) -> Option<Self::Item> {
 		self.line_index += 1;
 
-		let mut line = String::new();
-
-		if let Ok(count) = self.source.read_line(&mut line) {
-			if count == 0 {
-				return None;
-			}
-
+		if let Some(Ok(line)) = self.source.next() {
 			match line.parse() {
 				Ok(rtu) => Some(rtu),
 				Err(err) => {
@@ -141,7 +129,9 @@ impl<T: BufRead> Iterator for BufCSV<T> {
 fn main() -> Result<(), Box<dyn Error>> {
 	let into_radians = std::f32::consts::PI / 180.;
 
-	let bufcsv = BufCSV::from_file("testdata/drop.csv")?;
+	let bufcsv = BufCSV::new(Cereal::new("/dev/ttyUSB0"));
+
+	// let bufcsv = BufCSV::from_file("testdata/drop.csv")?;
 
 	let data = bufcsv
 		.map(|mut tdb| {
@@ -174,7 +164,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 		.zip(vy
 			.zip(vz)
 		)
-		.skip(10)
 		.map(|((t, x), (y, z))| {
 			(t, x, y, z)
 		});
