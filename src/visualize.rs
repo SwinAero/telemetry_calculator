@@ -43,7 +43,7 @@ pub fn run<I>(mut data: I)
 	let mut last_vel = (0., 0., 0.);
 	let x_factor = SIZE[0] / 11.;
 	let x_offset = SIZE[0] / 22.;
-	let y_factor = 7. * SIZE[1] / 16e-1;
+	let y_factor = 7. * SIZE[1] / 16e-3; // 10m * 10^-3 for entire FoV
 	let y_offset = SIZE[1] / 2.;
 
 	// let gc = GlyphCache::new(Font::from_bytes(include_bytes!("../fonts/font.ttf")));
@@ -122,7 +122,7 @@ pub fn run<I>(mut data: I)
 
 				let fps = 1e6 / elapsed.as_micros() as f32;
 
-				for _ in 0..(frequency / fps).ceil() as usize {
+				for _ in 0..8 {
 					if let Some(item) = data.next() {
 						circ_buf.push(item);
 					} else {

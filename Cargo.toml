@@ -7,9 +7,12 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nalgebra = "0.18"
 # Yeah sorry, serial unix definitely doesn't work on Windows
 serial = "0.4"
+
+[dependencies.nalgebra]
+version = "0.18"
+optional = true
 
 [dependencies.image]
 version = "0.22"
@@ -26,6 +29,8 @@ optional = true
 
 [features]
 smooth = []
+normalize = ["nalgebra"]
 visualize = ["piston_window", "piston2d-graphics", "image"]
+gravity = []
 
-default = ["smooth", "visualize"]
+default = ["smooth", "normalize", "visualize"]

@@ -1,6 +1,8 @@
+#[cfg(feature = "normalize")]
 extern crate nalgebra;
 extern crate serial;
 
+#[cfg(feature = "normalize")]
 use nalgebra::*;
 
 use std::fs::{File, OpenOptions};
@@ -133,15 +135,20 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 	let data = bufcsv
 		.map(|mut tdb| {
-			tdb.roll *= into_radians;
-			tdb.pitch *= into_radians;
-			tdb.yaw *= into_radians;
+			#[cfg(feature = "normalize")] {
+				tdb.roll *= into_radians;
+				tdb.pitch *= into_radians;
+				tdb.yaw *= into_radians;
 
-			let point = Point3::new(tdb.acc_x, tdb.acc_y, tdb.acc_z);
-			let rot = Rotation3::from_euler_angles(tdb.roll, tdb.pitch, tdb.yaw);
-			let norm_accel: Point3<f32> = rot.transform_point(&point);
+				let point = Point3::new(tdb.acc_x, tdb.acc_y, tdb.acc_z);
+				let rot = Rotation3::from_euler_angles(tdb.roll, tdb.pitch, tdb.yaw);
+				let norm_accel: Point3<f32> = rot.transform_point(&point);
 
-			[tdb.delta_t, norm_accel[0], norm_accel[1], norm_accel[2]]
+				return [tdb.delta_t, norm_accel[0], norm_accel[1], norm_accel[2]];
+			}
+			#[cfg(not(feature = "normalize"))] {
+				[tdb.delta_t, tdb.acc_x, tdb.acc_y, tdb.acc_z]
+			}
 		});
 
 	let mut unziperator = Unziperator::new(data);
@@ -151,16 +158,20 @@ fn main() -> Result<(), Box<dyn Error>> {
 	let az = unziperator.subscribe();
 	let mut dt = Teeterator::new(unziperator);
 
-	let (jx, jy, jz) = calculus!(dt, DifferentiateF32, ax, ay, az);
-	#[cfg(feature = "smooth")]
+	#[cfg(feature = "gravity")]
+		let (jx, jy, jz) = calculus!(dt, DifferentiateF32, ax, ay, az);
+	#[cfg(feature = "gravity")]
+		#[cfg(feature = "smooth")]
 		let (jx, jy, jz) = calculus!(dt, WeightedMovingAvgF32, jx, jy, jz);
-	let (ax, ay, az) = calculus!(dt, IntegrateF32, jx, jy, jz);
-	let (vx, vy, vz) = calculus!(dt, IntegrateF32, ax, ay, az);
+	#[cfg(feature = "gravity")]
+		let (ax, ay, az) = calculus!(dt, IntegrateF32, jx, jy, jz);
+	// TODO: Motion compensation so it doesn't fly off
+	// let (vx, vy, vz) = calculus!(dt, IntegrateF32, ax, ay, az);
 
 	let data_src = dt
-		.zip(vx)
-		.zip(vy
-			.zip(vz)
+		.zip(ax)
+		.zip(ay
+			.zip(az)
 		)
 		.map(|((t, x), (y, z))| {
 			(t, x, y, z)

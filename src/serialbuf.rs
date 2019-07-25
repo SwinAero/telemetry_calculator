@@ -4,8 +4,10 @@ use serial::unix::TTYPort;
 
 use std::io::{BufRead, Error as IOError, Read};
 use std::path::Path;
+use std::thread;
+use std::time::Duration;
 
-const MAX_BYTES_PER_CALL: usize = 256;
+const MAX_BYTES_PER_CALL: usize = 128;
 
 pub struct Cereal {
 	tty: TTYPort,
@@ -15,7 +17,22 @@ pub struct Cereal {
 
 impl Cereal {
 	pub fn new(path: &str) -> Cereal {
-		let mut cereal = TTYPort::open(Path::new(path)).unwrap();
+		let path = Path::new(path);
+		if path.exists() {
+			println!("Please unplug the cable");
+			while path.exists() {
+				thread::sleep(Duration::from_secs(1));
+			}
+		}
+		if !path.exists() {
+			println!("Please plug the cable in");
+			while !path.exists() {
+				thread::sleep(Duration::from_secs(1));
+			}
+			println!("Let the party begin");
+		}
+
+		let mut cereal = TTYPort::open(&path).unwrap();
 
 		let mut settings = cereal.read_settings().unwrap();
 
@@ -29,11 +46,11 @@ impl Cereal {
 			index: 0,
 		};
 
-		println!("Waiting for connection...");
+		println!("Loading initial read buffer");
 		while cereal.index < MAX_BYTES_PER_CALL {
 			let _ = cereal.fill_buf();
 		}
-		println!("Connected!");
+		println!("Ready!");
 
 		return cereal;
 	}
