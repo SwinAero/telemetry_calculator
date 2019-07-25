@@ -9,6 +9,10 @@ edition = "2018"
 [dependencies]
 nalgebra = "0.18"
 
+[dependencies.serial]
+version = "0.4"
+optional = true
+
 [dependencies.piston_window]
 version = "0.100"
 optional = true
@@ -21,5 +25,6 @@ optional = true
 [features]
 smooth = []
 visualize = ["piston_window", "piston2d-graphics"]
+from_serial = ["serial"]
 
-default = ["smooth", "visualize"]
+default = ["smooth", "visualize", "from_serial"]

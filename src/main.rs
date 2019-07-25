@@ -4,7 +4,7 @@ extern crate piston_window;
 
 use nalgebra::*;
 
-use std::{io, fs};
+use std::fs::{File, OpenOptions};
 use std::str::FromStr;
 use std::error::Error;
 use std::fmt;
@@ -75,20 +75,16 @@ impl fmt::Display for CSVDeErr {
 
 impl Error for CSVDeErr {}
 
-pub struct BufCSV {
-	source: io::BufReader<fs::File>,
+pub struct BufCSV<R> {
+	source: R,
 	previous: RawTelemUnit,
 	line_index: usize,
 }
 
-impl BufCSV {
-	pub fn new(path: &str) -> Result<Self, Box<dyn Error>> {
-		let source = fs::OpenOptions::new()
-			.read(true)
-			.open(path)?;
-
+impl<R: BufRead> BufCSV<R> {
+	pub fn new(source: R) -> Result<Self, Box<dyn Error>> {
 		let mut bufcsv = BufCSV {
-			source: BufReader::new(source),
+			source,
 			previous: RawTelemUnit::default(),
 			line_index: 0,
 		};
@@ -104,7 +100,19 @@ impl BufCSV {
 	}
 }
 
-impl Iterator for BufCSV {
+impl BufCSV<BufReader<File>> {
+	pub fn from_file(path: &str) -> Result<Self, Box<dyn Error>> {
+		let source = OpenOptions::new()
+			.read(true)
+			.open(path)?;
+
+		let br = BufReader::new(source);
+
+		Self::new(br)
+	}
+}
+
+impl<T: BufRead> Iterator for BufCSV<T> {
 	type Item = RawTelemUnit;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -133,7 +141,9 @@ impl Iterator for BufCSV {
 fn main() -> Result<(), Box<dyn Error>> {
 	let into_radians = std::f32::consts::PI / 180.;
 
-	let buf = BufCSV::new("testdata/drop.csv")?
+	let bufcsv = BufCSV::from_file("testdata/drop.csv")?;
+
+	let data = bufcsv
 		.map(|mut tdb| {
 			tdb.roll *= into_radians;
 			tdb.pitch *= into_radians;
@@ -146,7 +156,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 			[tdb.delta_t, norm_accel[0], norm_accel[1], norm_accel[2]]
 		});
 
-	let mut unziperator = Unziperator::new(buf);
+	let mut unziperator = Unziperator::new(data);
 
 	let ax = unziperator.subscribe();
 	let ay = unziperator.subscribe();

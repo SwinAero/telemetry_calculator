@@ -1,4 +1,4 @@
-use crate::smoothing::circbuf::CircBuf;
+use crate::circbuf::CircBuf;
 use std::ops::{Mul, Add, Div};
 
 pub type WeightedMovingAvgF32<I, F> = WeightedMovingAvg<I, F, f32>;
