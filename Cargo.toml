@@ -8,9 +8,13 @@ edition = "2018"
 
 [dependencies]
 nalgebra = "0.18"
+# Yeah sorry, serial unix definitely doesn't work on Windows
 serial = "0.4"
 
-# Yeah sorry, serial unix definitely doesn't work on Windows
+[dependencies.image]
+version = "0.22"
+optional = true
+
 [dependencies.piston_window]
 version = "0.100"
 optional = true
@@ -22,6 +26,6 @@ optional = true
 
 [features]
 smooth = []
-visualize = ["piston_window", "piston2d-graphics"]
+visualize = ["piston_window", "piston2d-graphics", "image"]
 
 default = ["smooth", "visualize"]

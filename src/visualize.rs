@@ -1,3 +1,6 @@
+extern crate piston_window;
+extern crate image;
+
 use piston_window::*;
 use crate::circbuf::CircBuf;
 use std::time::{SystemTime, Duration};

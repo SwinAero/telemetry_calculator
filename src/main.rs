@@ -1,6 +1,4 @@
 extern crate nalgebra;
-#[cfg(feature = "visualize")]
-extern crate piston_window;
 extern crate serial;
 
 use nalgebra::*;

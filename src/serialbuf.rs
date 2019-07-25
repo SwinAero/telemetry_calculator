@@ -52,7 +52,7 @@ impl BufRead for Cereal {
 		self.index += read;
 		self.buf.extend((0..read).map(|_| 0u8));
 
-		Ok(&self.buf[..self.buf.len() - MAX_BYTES_PER_CALL])
+		Ok(&self.buf[..self.index])
 	}
 
 	fn consume(&mut self, amt: usize) {
