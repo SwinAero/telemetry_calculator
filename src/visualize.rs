@@ -1,10 +1,8 @@
 extern crate piston_window;
-extern crate image;
 
 use piston_window::*;
 use crate::circbuf::CircBuf;
-use std::time::{SystemTime, Duration};
-use std::thread;
+use std::time::SystemTime;
 // use graphics::glyph_cache::rusttype::GlyphCache;
 
 const SIZE: [f64; 2] = [1280., 720.];
@@ -23,22 +21,22 @@ pub fn run<I>(mut data: I)
 		frequency / time
 	};
 
-	println!("Sample rate: approx. {}/s", frequency);
-
-	let mut window: PistonWindow =
-		WindowSettings::new("Acceleration Demo", SIZE)
-			.exit_on_esc(true).build().unwrap();
+	println!("Guessing sample rate: {}/s?", frequency);
 
 	let circ_buf_size = 10 * frequency as usize;
 	let mut circ_buf: CircBuf<(f32, f32, f32, f32)> = CircBuf::new(circ_buf_size);
 
-	println!("Populating the visualizer's buffer...");
+	println!("Populating the visualizer's buffer... This may take a while...");
 
 	for _ in 0..circ_buf_size {
 		circ_buf.push(data.next().unwrap());
 	}
 
 	println!("Visualizer's buffer has been populated.");
+
+	let mut window: PistonWindow =
+		WindowSettings::new("Acceleration Demo", SIZE)
+			.exit_on_esc(true).build().unwrap();
 
 	let mut last_vel = (0., 0., 0.);
 	let x_factor = SIZE[0] / 11.;
@@ -48,7 +46,6 @@ pub fn run<I>(mut data: I)
 
 	// let gc = GlyphCache::new(Font::from_bytes(include_bytes!("../fonts/font.ttf")));
 
-	let mut timings = SystemTime::now();
 	while let Some(e) = window.next() {
 		window.draw_2d(&e, |ctx, g2d, _device| {
 			clear([1.0; 4], g2d);
@@ -117,23 +114,18 @@ pub fn run<I>(mut data: I)
 
 			last_vel = (0., 0., 0.);
 
-			if let Ok(elapsed) = timings.elapsed() {
-				timings = SystemTime::now();
+			let start_of_refresh = SystemTime::now();
 
-				let fps = 1e6 / elapsed.as_micros() as f32;
-
-				for _ in 0..8 {
-					if let Some(item) = data.next() {
-						circ_buf.push(item);
-					} else {
-						println!("Data stream exhausted!");
-						loop {
-							thread::sleep(Duration::from_secs(1));
-						}
-					}
+			while let Ok(delay) = start_of_refresh.elapsed() {
+				if delay.as_micros() > (1e6 / frequency).ceil() as u128 {
+					break;
 				}
 
-				println!("Framerate: {:?}", fps);
+				if let Some(item) = data.next() {
+					circ_buf.push(item);
+				} else {
+					println!("Data stream exhausted!");
+				}
 			}
 		});
 	}

@@ -14,10 +14,6 @@ serial = "0.4"
 version = "0.18"
 optional = true
 
-[dependencies.image]
-version = "0.22"
-optional = true
-
 [dependencies.piston_window]
 version = "0.100"
 optional = true
@@ -30,7 +26,7 @@ optional = true
 [features]
 smooth = []
 normalize = ["nalgebra"]
-visualize = ["piston_window", "piston2d-graphics", "image"]
-gravity = []
+visualize = ["piston_window", "piston2d-graphics"]
+hidegravity = []
 
-default = ["smooth", "normalize", "visualize"]
+default = ["smooth", "normalize", "visualize", "hidegravity"]

@@ -158,12 +158,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 	let az = unziperator.subscribe();
 	let mut dt = Teeterator::new(unziperator);
 
-	#[cfg(feature = "gravity")]
+	#[cfg(feature = "hidegravity")]
 		let (jx, jy, jz) = calculus!(dt, DifferentiateF32, ax, ay, az);
-	#[cfg(feature = "gravity")]
+	#[cfg(feature = "hidegravity")]
 		#[cfg(feature = "smooth")]
 		let (jx, jy, jz) = calculus!(dt, WeightedMovingAvgF32, jx, jy, jz);
-	#[cfg(feature = "gravity")]
+	#[cfg(feature = "hidegravity")]
 		let (ax, ay, az) = calculus!(dt, IntegrateF32, jx, jy, jz);
 	// TODO: Motion compensation so it doesn't fly off
 	// let (vx, vy, vz) = calculus!(dt, IntegrateF32, ax, ay, az);
