@@ -129,6 +129,7 @@ impl<T: BufRead> Iterator for BufCSV<T> {
 fn main() -> Result<(), Box<dyn Error>> {
 	let into_radians = std::f32::consts::PI / 180.;
 
+	// /dev/ttyUSB0 is the port if the clone arduino uses the CH340 USB chip, for genuine arduinos using ATmega16u2, use /dev/ttyACM0
 	let bufcsv = BufCSV::new(Cereal::new("/dev/ttyUSB0"));
 
 	// let bufcsv = BufCSV::from_file("testdata/drop.csv")?;
