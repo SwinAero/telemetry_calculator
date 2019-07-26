@@ -39,7 +39,7 @@ pub fn run<I>(mut data: I)
 		WindowSettings::new("Acceleration Demo", SIZE)
 			.exit_on_esc(true).build().unwrap();
 
-	let mut last_vel = (0., 0., 0.);
+	let mut last_accel = (0., 0., 0., 0.);
 	let x_factor = SIZE[0] / 11.;
 	let x_offset = SIZE[0] / 22.;
 	let y_factor = 7. * SIZE[1] / 16e-3; // 10m * 10^-3 for entire FoV
@@ -75,19 +75,21 @@ pub fn run<I>(mut data: I)
 			let mut time = 0.;
 			circ_buf.iter()
 				.filter(|(dt, _, _, _)| *dt > 0.)
-				.for_each(|(dt, vx, vy, vz)| {
-					let (dt, vx, vy, vz) = (*dt as f64, *vx as f64, *vy as f64, *vz as f64);
+				.for_each(|(dt, ax, ay, az)| {
+					let (dt, ax, ay, az) = (*dt as f64, *ax as f64, *ay as f64, *az as f64);
+					let vsum = (ax.powf(2.) + ay.powf(2.) + az.powf(2.)).sqrt();
 
-					if last_vel == (0., 0., 0., ) {
-						last_vel = (vx, vy, vz);
+					if last_accel == (0., 0., 0., 0.) {
+						last_accel = (ax, ay, az, vsum);
 						return;
 					}
 
 					let xpair = [time * x_factor + x_offset, (time - dt) * x_factor + x_offset];
 
-					let x = [xpair[0], last_vel.0 * y_factor + y_offset, xpair[1], vx * y_factor + y_offset];
-					let y = [xpair[0], last_vel.1 * y_factor + y_offset, xpair[1], vy * y_factor + y_offset];
-					let z = [xpair[0], last_vel.2 * y_factor + y_offset, xpair[1], vz * y_factor + y_offset];
+					let x = [xpair[0], last_accel.0 * y_factor + y_offset, xpair[1], ax * y_factor + y_offset];
+					let y = [xpair[0], last_accel.1 * y_factor + y_offset, xpair[1], ay * y_factor + y_offset];
+					let z = [xpair[0], last_accel.2 * y_factor + y_offset, xpair[1], az * y_factor + y_offset];
+					let sum = [xpair[0], last_accel.3 * y_factor + y_offset, xpair[1], vsum * y_factor + y_offset];
 
 					line(
 						[1.0, 0.0, 0.0, 1.0], // red
@@ -110,11 +112,18 @@ pub fn run<I>(mut data: I)
 						ctx.transform,
 						g2d,
 					);
-					last_vel = (vx, vy, vz);
+					line(
+						[0.0, 0.0, 0.0, 0.5], // grey
+						1.0,
+						sum,
+						ctx.transform,
+						g2d,
+					);
+					last_accel = (ax, ay, az, vsum);
 					time += dt;
 				});
 
-			last_vel = (0., 0., 0.);
+			last_accel = (0., 0., 0., 0.);
 
 			let start_of_refresh = SystemTime::now();
 

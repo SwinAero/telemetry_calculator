@@ -33,7 +33,7 @@ impl<T> CircBuf<T> {
 	}
 }
 
-#[cfg(feature = "smooth")]
+#[cfg(any(feature = "smooth", feature = "visualize"))]
 impl<T: Copy> CircBuf<T> {
 	pub fn fold<F, A>(&self, init: A, f: F) -> A
 		where F: FnMut(A, T) -> A {
