@@ -29,7 +29,7 @@ impl<T> CircBuf<T> {
 	}
 
 	pub fn iter(&self) -> Iter<T> {
-		Iter { buf: &self.buf, offset: self.index, i: 0 }
+		Iter { buf: &self.buf, offset: self.index, i: 0, back_i: self.buf.len() }
 	}
 }
 
@@ -48,6 +48,7 @@ pub struct Iter<'a, T> {
 	buf: &'a Vec<Option<T>>,
 	offset: usize,
 	i: usize,
+	back_i: usize,
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
@@ -56,13 +57,33 @@ impl<'a, T> Iterator for Iter<'a, T> {
 	fn next(&mut self) -> Option<Self::Item> {
 		let len = self.buf.len();
 
-		if self.i == len {
+		if self.i == self.back_i {
 			return None;
 		}
 
 		let item = &self.buf[(self.i + self.offset) % len];
 
 		self.i += 1;
+
+		if let Some(ref inner) = item {
+			return Some(inner);
+		} else {
+			return None;
+		}
+	}
+}
+
+impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
+	fn next_back(&mut self) -> Option<Self::Item> {
+		let len = self.buf.len();
+
+		if self.i == self.back_i {
+			return None;
+		}
+
+		let item = &self.buf[(self.i + self.offset) % len];
+
+		self.back_i -= 1;
 
 		if let Some(ref inner) = item {
 			return Some(inner);

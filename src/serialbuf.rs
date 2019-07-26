@@ -4,7 +4,7 @@ use serial::unix::TTYPort;
 
 use std::io::{BufRead, Error as IOError, Read};
 use std::path::Path;
-use std::thread;
+use std::{thread, process};
 use std::time::Duration;
 
 const MAX_BYTES_PER_CALL: usize = 128;
@@ -19,20 +19,22 @@ impl Cereal {
 	pub fn new(path: &str) -> Cereal {
 		let path = Path::new(path);
 		if path.exists() {
-			println!("Please unplug the cable");
+			println!("Please unplug the cable before continuing");
 			while path.exists() {
 				thread::sleep(Duration::from_secs(1));
 			}
 		}
 		if !path.exists() {
-			println!("Please plug the cable in");
+			println!("Please plug the cable in now");
 			while !path.exists() {
 				thread::sleep(Duration::from_secs(1));
 			}
-			println!("Let the party begin");
 		}
 
-		let mut cereal = TTYPort::open(&path).unwrap();
+		let mut cereal = TTYPort::open(&path).unwrap_or_else(|e| {
+			println!("Please check your permissions for accessing the serial port. {:?}", e);
+			process::exit(0);
+		});
 
 		let mut settings = cereal.read_settings().unwrap();
 

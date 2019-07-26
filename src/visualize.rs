@@ -6,6 +6,7 @@ use std::time::SystemTime;
 // use graphics::glyph_cache::rusttype::GlyphCache;
 
 const SIZE: [f64; 2] = [1280., 720.];
+const BUFFERED_SECS: usize = 10;
 
 pub fn run<I>(mut data: I)
 	where I: Iterator<Item=(f32, f32, f32, f32)> {
@@ -23,7 +24,7 @@ pub fn run<I>(mut data: I)
 
 	println!("Guessing sample rate: {}/s?", frequency);
 
-	let circ_buf_size = 10 * frequency as usize;
+	let circ_buf_size = BUFFERED_SECS * frequency as usize;
 	let mut circ_buf: CircBuf<(f32, f32, f32, f32)> = CircBuf::new(circ_buf_size);
 
 	println!("Populating the visualizer's buffer... This may take a while...");
@@ -73,6 +74,7 @@ pub fn run<I>(mut data: I)
 
 			let mut time = 0.;
 			circ_buf.iter()
+				.filter(|(dt, _, _, _)| *dt > 0.)
 				.for_each(|(dt, vx, vy, vz)| {
 					let (dt, vx, vy, vz) = (*dt as f64, *vx as f64, *vy as f64, *vz as f64);
 
@@ -81,7 +83,7 @@ pub fn run<I>(mut data: I)
 						return;
 					}
 
-					let xpair = [time * x_factor + x_offset, (time + dt) * x_factor + x_offset];
+					let xpair = [time * x_factor + x_offset, (time - dt) * x_factor + x_offset];
 
 					let x = [xpair[0], last_vel.0 * y_factor + y_offset, xpair[1], vx * y_factor + y_offset];
 					let y = [xpair[0], last_vel.1 * y_factor + y_offset, xpair[1], vy * y_factor + y_offset];
@@ -117,7 +119,8 @@ pub fn run<I>(mut data: I)
 			let start_of_refresh = SystemTime::now();
 
 			while let Ok(delay) = start_of_refresh.elapsed() {
-				if delay.as_micros() > (1e6 / frequency).ceil() as u128 {
+				// This will limit framerate to 2x refresh
+				if delay.as_millis() > (2e3 / frequency).ceil() as u128 {
 					break;
 				}
 
@@ -126,6 +129,10 @@ pub fn run<I>(mut data: I)
 				} else {
 					println!("Data stream exhausted!");
 				}
+			}
+
+			while circ_buf.fold(0., |t, (dt, _, _, _)| t + dt) > BUFFERED_SECS as f32 {
+				circ_buf.push((0., 0., 0., 0.));
 			}
 		});
 	}
