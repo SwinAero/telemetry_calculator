@@ -27,10 +27,10 @@ mod serialbuf;
 
 use serialbuf::*;
 
-#[cfg(feature = "smooth")]
+#[cfg(all(feature = "hidegravity", feature = "smooth"))]
 mod smoothing;
 
-#[cfg(feature = "smooth")]
+#[cfg(all(feature = "hidegravity", feature = "smooth"))]
 use smoothing::*;
 
 #[cfg(feature = "visualize")]
@@ -161,8 +161,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 	#[cfg(feature = "hidegravity")]
 		let (jx, jy, jz) = calculus!(dt, DifferentiateF32, ax, ay, az);
-	#[cfg(feature = "hidegravity")]
-		#[cfg(feature = "smooth")]
+	#[cfg(all(feature = "hidegravity", feature = "smooth"))]
 		let (jx, jy, jz) = calculus!(dt, WeightedMovingAvgF32, jx, jy, jz);
 	#[cfg(feature = "hidegravity")]
 		let (ax, ay, az) = calculus!(dt, IntegrateF32, jx, jy, jz);
