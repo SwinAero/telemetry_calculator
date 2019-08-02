@@ -142,7 +142,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 				tdb.yaw *= into_radians;
 
 				let point = Point3::new(tdb.acc_x, tdb.acc_y, tdb.acc_z);
-				let rot = Rotation3::from_euler_angles(tdb.roll, tdb.pitch, tdb.yaw);
+				let rot = Rotation3::from_euler_angles(-tdb.roll, -tdb.pitch, -tdb.yaw);
 				let norm_accel: Point3<f32> = rot.transform_point(&point);
 
 				return [tdb.delta_t, norm_accel[0], norm_accel[1], norm_accel[2]];

@@ -76,7 +76,7 @@ pub fn run<I>(mut data: I)
 			circ_buf.iter()
 				.filter(|(dt, _, _, _)| *dt > 0.)
 				.for_each(|(dt, ax, ay, az)| {
-					let (dt, ax, ay, az) = (*dt as f64, *ax as f64, *ay as f64, *az as f64);
+					let (dt, ax, ay, az) = (*dt as f64, -*ax as f64, -*ay as f64, -*az as f64);
 					let vsum = (ax.powf(2.) + ay.powf(2.) + az.powf(2.)).sqrt();
 
 					if last_accel == (0., 0., 0., 0.) {
